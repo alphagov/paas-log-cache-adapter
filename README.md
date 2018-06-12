@@ -1,7 +1,6 @@
-# PaaS metrics
+# GOV.UK PaaS LogCacheAdapter
 
-Application collecting metrics from the log-cache and exporting them to our
-tenants in formats of:
+Application for collecting metrics from GOV.UK PaaS via log-cache in the following formats:
 
 - JSON
 - Prometheus
