@@ -1,0 +1,11 @@
+---
+applications:
+ - name: paas-log-cache-adapter
+   memory: 128M
+   disk_quota: 100M
+   instances: 2
+   buildpack: go_buildpack
+   health-check-type: process
+   env:
+     GOPACKAGENAME: github.com/alphagov/paas-log-cache-adapter
+   command: ./bin/paas-log-cache-adapter
