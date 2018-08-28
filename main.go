@@ -22,7 +22,7 @@ var acceptFormats = []responder{
 	},
 	responder{
 		accept:      "text/plain",
-		contentType: "application/vnd.google.protobuf;; pproto=io.prometheus.client.MetricFamily; encoding=delimited",
+		contentType: "text/plain; version=0.0.4; charset=utf-8",
 		converter:   prometheus.Converter,
 	},
 }
