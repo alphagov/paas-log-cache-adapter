@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/go-log-cache"
-	"github.com/alphagov/paas-log-cache-adapter/pkg/metric"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"github.com/alphagov/paas-log-cache-adapter/pkg/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,8 +26,8 @@ func (mC *myClient) Do(req *http.Request) (*http.Response, error) {
 
 func (s *server) handleMetrics() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var wg sync.WaitGroup
-		m := []*metric.Metric{}
+		w.Header().Add("Content-Type", "text/plain")
+
 		token := r.Header.Get("Authorization")
 		client := logcache.NewClient(s.logCacheAPI, logcache.WithHTTPClient(&myClient{
 			token: token,
@@ -37,39 +38,74 @@ func (s *server) handleMetrics() http.HandlerFunc {
 		meta, err := client.Meta(ctx)
 		if err != nil {
 			s.logger.Error(err)
-			s.error(w, http.StatusInternalServerError, "we're experiencing issues, sorry")
+			s.error(
+				w,
+				http.StatusInternalServerError,
+				"Cannot connect to log-cache",
+			)
 			return
 		}
 
-		// TODO: Consider optimising that. It runs fairly slow (almost 4s) with
-		// 745 instances running on my admin account :troll:
-		for sourceID := range meta {
-			s.logger.WithFields(logrus.Fields{
-				"instance_id": sourceID,
-			}).Debug("Obtaining metrics for resource")
+		var logGetters, appender sync.WaitGroup
+		sourceIDs := make(chan string)
+		allEnvelopes := make([]*loggregator_v2.Envelope, 0)
+		envelopeChan := make(chan []*loggregator_v2.Envelope)
 
-			wg.Add(1)
-			go func(sourceID string) {
-				defer wg.Done()
-				r, err := client.Read(ctx, sourceID, time.Now().Add(-10*time.Minute))
-				if err != nil {
-					s.logger.Error(err)
-					return
+		for i := 0; i < 10; i++ {
+			logGetters.Add(1)
+			go func() {
+				defer logGetters.Done()
+
+				for sourceID := range sourceIDs {
+					s.logger.WithFields(logrus.Fields{
+						"instance_id": sourceID,
+					}).Debug("Obtaining metrics for resource")
+
+					envelopes, err := client.Read(
+						ctx,
+						sourceID,
+						time.Now().Add(-10*time.Minute),
+					)
+
+					if err != nil {
+						s.logger.Error(err)
+						continue
+					}
+
+					envelopeChan <- envelopes
 				}
-				m = append(m, convertToMetrics(r)...)
-			}(sourceID)
+			}()
 		}
-		wg.Wait()
 
-		data, err := s.responder.converter(m)
+		appender.Add(1)
+		go func() {
+			defer appender.Done()
+			for envelopes := range envelopeChan {
+				allEnvelopes = append(allEnvelopes, envelopes...)
+			}
+		}()
+
+		for sourceID := range meta {
+			sourceIDs <- sourceID
+		}
+		close(sourceIDs)
+
+		logGetters.Wait()
+		close(envelopeChan)
+		appender.Wait()
+
+		metricFams := prometheus.Convert(allEnvelopes)
+		err = prometheus.WriteMetrics(metricFams, w)
 		if err != nil {
 			s.logger.Error(err)
-			s.error(w, http.StatusInternalServerError, "we're experiencing issues, sorry")
+			s.error(
+				w,
+				http.StatusInternalServerError,
+				"Error converting log-cache metrics to prometheus format",
+			)
 			return
 		}
-		w.Header().Add("Content-Type", s.responder.contentType)
 
-		w.Write(data)
 	}
 }
 

@@ -30,9 +30,8 @@ go run main.go handlers.go middleware.go server.go utils.go # make sure to list 
 To run test, simply execute the following command:
 
 ```sh
-go run ./...
+make test
 ```
-Add `-v` for more verbose output or `-cover` for coverage report along side.
 
 If you run into problems with go test caching, set the enviornment variable
 `GOCACHE=off`.

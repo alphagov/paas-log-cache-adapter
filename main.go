@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/alphagov/paas-log-cache-adapter/pkg/metric"
-	"github.com/alphagov/paas-log-cache-adapter/pkg/prometheus"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -18,12 +16,10 @@ var acceptFormats = []responder{
 	responder{
 		accept:      "application/json",
 		contentType: "application/json; charset=utf-8",
-		converter:   metric.JSONConverter,
 	},
 	responder{
 		accept:      "text/plain",
 		contentType: "text/plain; version=0.0.4; charset=utf-8",
-		converter:   prometheus.Converter,
 	},
 }
 
