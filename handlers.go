@@ -49,6 +49,7 @@ func (s *server) handleMetrics() http.HandlerFunc {
 		var logGetters, appender sync.WaitGroup
 		sourceIDs := make(chan string)
 		envelopeChan := make(chan []*loggregator_v2.Envelope)
+		metrics := prometheus.CreateMetricsCollection()
 
 		for i := 0; i < 10; i++ {
 			logGetters.Add(1)
@@ -79,10 +80,12 @@ func (s *server) handleMetrics() http.HandlerFunc {
 		appender.Add(1)
 		go func() {
 			defer appender.Done()
+
 			for envelopes := range envelopeChan {
 
 				metricFams := prometheus.Convert(envelopes)
-				err = prometheus.WriteMetrics(metricFams, w)
+				err = metrics.Append(&metricFams)
+
 				if err != nil {
 					s.logger.Error(err)
 					s.error(
@@ -90,7 +93,6 @@ func (s *server) handleMetrics() http.HandlerFunc {
 						http.StatusInternalServerError,
 						"Error converting log-cache metrics to prometheus format",
 					)
-					return
 				}
 			}
 		}()
@@ -104,6 +106,7 @@ func (s *server) handleMetrics() http.HandlerFunc {
 		close(envelopeChan)
 		appender.Wait()
 
+		metrics.Write(w)
 	}
 }
 

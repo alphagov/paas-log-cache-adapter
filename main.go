@@ -14,10 +14,6 @@ var (
 
 var acceptFormats = []responder{
 	responder{
-		accept:      "application/json",
-		contentType: "application/json; charset=utf-8",
-	},
-	responder{
 		accept:      "text/plain",
 		contentType: "text/plain; version=0.0.4; charset=utf-8",
 	},
