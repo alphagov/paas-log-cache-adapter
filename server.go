@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/alphagov/paas-log-cache-adapter/pkg/metric"
 	"github.com/sirupsen/logrus"
 )
 
 type responder struct {
 	accept      string
 	contentType string
-	converter   metric.Converter
 }
 
 type server struct {
@@ -23,7 +21,12 @@ type server struct {
 	responder   *responder
 }
 
-func newServer(logger *logrus.Logger, acceptedFormats []responder, logCacheAPI string) (*server, error) {
+func newServer(
+	logger *logrus.Logger,
+	acceptedFormats []responder,
+	logCacheAPI string,
+) (*server, error) {
+
 	if logger == nil {
 		return nil, fmt.Errorf("server: logger is required")
 	}
@@ -38,7 +41,10 @@ func newServer(logger *logrus.Logger, acceptedFormats []responder, logCacheAPI s
 }
 
 func (s *server) routes() {
-	s.router.HandleFunc("/metrics", s.recordRequest(s.requireAuth(s.chooseFormat(s.handleMetrics()))))
+	s.router.HandleFunc(
+		"/metrics",
+		s.recordRequest(s.requireAuth(s.chooseFormat(s.handleMetrics()))),
+	)
 }
 
 func (s *server) run(port int64) {

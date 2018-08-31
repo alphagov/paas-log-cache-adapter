@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/alphagov/paas-log-cache-adapter/pkg/metric"
 	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 
@@ -18,10 +17,6 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("success"))
 }
 
-func faultyConverter(m []*metric.Metric) ([]byte, error) {
-	return nil, fmt.Errorf("__EVERYTHING_IS_UNDER_CONTROL__")
-}
-
 var _ = Describe("main package", func() {
 	var log *logrus.Logger
 	var acceptedFormats []responder
@@ -32,14 +27,8 @@ var _ = Describe("main package", func() {
 		log.Out = GinkgoWriter
 		acceptedFormats = []responder{
 			responder{
-				accept:      "application/json",
-				contentType: "application/json",
-				converter:   metric.JSONConverter,
-			},
-			responder{
-				accept:      "apocalypse",
-				contentType: "application/json",
-				converter:   faultyConverter,
+				accept:      "text/plain",
+				contentType: "text/plain",
 			},
 		}
 	})
@@ -80,14 +69,12 @@ var _ = Describe("main package", func() {
 			Expect(w.Code).To(Equal(http.StatusNotAcceptable))
 		})
 
-		It("should fail to serve the route due to faulty converter", func() {
+		It("should return nothing if there are no metrics", func() {
 			httpmock.Activate()
 			defer httpmock.DeactivateAndReset()
 
 			httpmock.RegisterResponder("GET", fmt.Sprintf("%s/v1/meta", api),
-				httpmock.NewStringResponder(http.StatusOK, `{"meta":{"test":{}}}`))
-			httpmock.RegisterResponder("GET", fmt.Sprintf("%s/v1/read/test", api),
-				httpmock.NewStringResponder(http.StatusOK, `{"envelopes":{"batch":[{}]}}`))
+				httpmock.NewStringResponder(http.StatusOK, `{"meta":{}}`))
 
 			srv, err := newServer(log, acceptedFormats, api)
 
@@ -96,12 +83,14 @@ var _ = Describe("main package", func() {
 			r, err := http.NewRequest("GET", "/", nil)
 			Expect(err).NotTo(HaveOccurred())
 			r.Header.Add("Authorization", "__JWT_ACCESS_TOKEN__")
-			r.Header.Add("Accept", "apocalypse")
+			r.Header.Add("Accept", "text/plain")
 
 			w := httptest.NewRecorder()
-			srv.requireAuth(srv.chooseFormat(srv.handleMetrics()))(w, r)
+			srv.recordRequest(srv.requireAuth(srv.chooseFormat(srv.handleMetrics())))(w, r)
 
-			Expect(w.Code).To(Equal(http.StatusInternalServerError))
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Header().Get("Content-Type")).To(Equal("text/plain"))
+			Expect(w.Body.String()).To(Equal(""))
 		})
 
 		It("should serve the requested data correctly", func() {
@@ -112,7 +101,45 @@ var _ = Describe("main package", func() {
 				httpmock.NewStringResponder(http.StatusOK, `{"meta":{"test":{}}}`))
 
 			httpmock.RegisterResponder("GET", fmt.Sprintf("%s/v1/read/test", api),
-				httpmock.NewStringResponder(http.StatusOK, `{"envelopes":{"batch":[{}]}}`))
+				httpmock.NewStringResponder(http.StatusOK, `{
+  "envelopes": {
+    "batch": [
+      {
+        "source_id": "instance-a",
+        "tags": {
+          "tag-a": "val-a"
+        },
+        "gauge": {
+          "metrics": {
+            "a-gauge": {
+              "value": 3.14
+            }
+          }
+        }
+      },
+      {
+        "source_id": "instance-a",
+        "tags": {
+          "tag-a": "val-a"
+        },
+        "counter": {
+          "name": "counter",
+          "total": 8
+        }
+      },
+      {
+        "source_id": "instance-b",
+        "tags": {
+          "tag-b": "val-b"
+        },
+        "counter": {
+          "name": "counter",
+          "total": 10
+        }
+      }
+    ]
+  }
+}`))
 
 			srv, err := newServer(log, acceptedFormats, api)
 
@@ -121,14 +148,19 @@ var _ = Describe("main package", func() {
 			r, err := http.NewRequest("GET", "/", nil)
 			Expect(err).NotTo(HaveOccurred())
 			r.Header.Add("Authorization", "__JWT_ACCESS_TOKEN__")
-			r.Header.Add("Accept", "application/json")
+			r.Header.Add("Accept", "text/plain")
 
 			w := httptest.NewRecorder()
 			srv.recordRequest(srv.requireAuth(srv.chooseFormat(srv.handleMetrics())))(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusOK))
-			Expect(w.Header().Get("Content-Type")).To(Equal("application/json"))
-			Expect(w.Body).To(ContainSubstring(`[]`))
+			Expect(w.Header().Get("Content-Type")).To(Equal("text/plain"))
+			Expect(w.Body.String()).To(ContainSubstring(`# TYPE counter counter
+counter{instance_id="instance-a",tag-a="val-a"} 8
+counter{instance_id="instance-b",tag-b="val-b"} 10`))
+
+			Expect(w.Body.String()).To(ContainSubstring(`# TYPE a-gauge gauge
+a-gauge{instance_id="instance-a",tag-a="val-a"} 3.14`))
 		})
 	})
 })
