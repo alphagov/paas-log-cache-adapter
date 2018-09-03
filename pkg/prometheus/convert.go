@@ -12,7 +12,7 @@ func Convert(r []*loggregator_v2.Envelope) map[string]*dto.MetricFamily {
 	for _, envelope := range r {
 		if envelope.GetCounter() != nil {
 			counter := envelope.GetCounter()
-			name := counter.GetName()
+			name := Sanitize(counter.GetName())
 
 			labels := makeLabels(
 				name,
@@ -38,6 +38,8 @@ func Convert(r []*loggregator_v2.Envelope) map[string]*dto.MetricFamily {
 		if envelope.GetGauge() != nil {
 			gauge := envelope.GetGauge()
 			for name, g := range gauge.GetMetrics() {
+				name = Sanitize(name)
+
 				labels := makeLabels(
 					name,
 					envelope.GetTags(),
@@ -98,7 +100,7 @@ func makeLabels(
 
 	for k, v := range tags {
 		label := &dto.LabelPair{
-			Name:  proto.String(k),
+			Name:  proto.String(Sanitize(k)),
 			Value: proto.String(v),
 		}
 		labels = append(labels, label)

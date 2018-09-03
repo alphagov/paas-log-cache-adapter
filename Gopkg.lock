@@ -78,6 +78,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:89cd2208bdeb192cc83ee287216af3c987fc87a90b9087718ad6631b636cefcf"
+  name = "github.com/iancoleman/strcase"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3605ed457bf7f8caa1371b4fafadadc026673479"
+
+[[projects]]
+  branch = "master"
   digest = "1:d2d851f86486221830962a3fc884c5f7529b46690be8661d85c10dd1eca4317e"
   name = "github.com/jarcoal/httpmock"
   packages = ["."]
@@ -309,6 +317,7 @@
     "code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2",
     "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/proto",
+    "github.com/iancoleman/strcase",
     "github.com/jarcoal/httpmock",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",

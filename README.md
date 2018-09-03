@@ -2,8 +2,7 @@
 
 Application for collecting metrics from GOV.UK PaaS via log-cache in the following formats:
 
-- JSON
-- Prometheus
+- Prometheus text format
 
 ## How to run
 
@@ -38,16 +37,15 @@ If you run into problems with go test caching, set the enviornment variable
 
 ## API
 
-The application exposes single endpoint, `/` - root. It requires two headers to
-be provided, in order for it to work as expected. These are:
+The application exposes single endpoint, `/metrics` - root. It requires two
+headers to be provided, in order for it to work as expected. These are:
 
 ### `Accept` header
 
 Which tells the application at what format would you like to receive the logs.
 Currently only two formats are being recognised:
 
-- JSON: `application/json`
-- Prometheus: `application/vnd.google.protobuf`
+- Prometheus: `text/plain`
 
 ### `Authorization` header
 
@@ -73,8 +71,9 @@ cf oauth-token
 If you put everything together and execute the following curl command:
 
 ```sh
-curl -H "Accept: application/json" -H "Authorization: $(cf oauth-token)" http://localhost:8080/
+curl -H "Accept: text/plain" -H "Authorization: $(cf oauth-token)" http://localhost:8080/
 ```
 
-You should retreive a JSON object of different metrics your user has access to.
+You should retreive the Prometheus text of different metrics your user has
+access to.
 

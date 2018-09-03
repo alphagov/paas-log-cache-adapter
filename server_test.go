@@ -156,11 +156,11 @@ var _ = Describe("main package", func() {
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(w.Header().Get("Content-Type")).To(Equal("text/plain"))
 			Expect(w.Body.String()).To(ContainSubstring(`# TYPE counter counter
-counter{instance_id="instance-a",tag-a="val-a"} 8
-counter{instance_id="instance-b",tag-b="val-b"} 10`))
+counter{instance_id="instance-a",tag_a="val-a"} 8
+counter{instance_id="instance-b",tag_b="val-b"} 10`))
 
-			Expect(w.Body.String()).To(ContainSubstring(`# TYPE a-gauge gauge
-a-gauge{instance_id="instance-a",tag-a="val-a"} 3.14`))
+			Expect(w.Body.String()).To(ContainSubstring(`# TYPE a_gauge gauge
+a_gauge{instance_id="instance-a",tag_a="val-a"} 3.14`))
 		})
 	})
 })

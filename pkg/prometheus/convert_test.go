@@ -50,8 +50,8 @@ var _ = Describe("prometheus package", func() {
 			}
 
 			expected := map[string]*dto.MetricFamily{
-				"a-counter": &dto.MetricFamily{
-					Name: proto.String("a-counter"),
+				"a_counter": &dto.MetricFamily{
+					Name: proto.String("a_counter"),
 					Type: dto.MetricType_COUNTER.Enum(),
 					Metric: []*dto.Metric{
 						{
@@ -61,7 +61,7 @@ var _ = Describe("prometheus package", func() {
 									Value: proto.String("some-instance"),
 								},
 								{
-									Name:  proto.String("tag-a"),
+									Name:  proto.String("tag_a"),
 									Value: proto.String("some-value"),
 								},
 							},
@@ -71,8 +71,8 @@ var _ = Describe("prometheus package", func() {
 						},
 					},
 				},
-				"a-gauge": &dto.MetricFamily{
-					Name: proto.String("a-gauge"),
+				"a_gauge": &dto.MetricFamily{
+					Name: proto.String("a_gauge"),
 					Type: dto.MetricType_GAUGE.Enum(),
 					Metric: []*dto.Metric{
 						{
@@ -82,7 +82,7 @@ var _ = Describe("prometheus package", func() {
 									Value: proto.String("some-instance"),
 								},
 								{
-									Name:  proto.String("tag-a"),
+									Name:  proto.String("tag_a"),
 									Value: proto.String("some-value"),
 								},
 							},
