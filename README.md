@@ -43,7 +43,7 @@ headers to be provided, in order for it to work as expected. These are:
 ### `Accept` header
 
 Which tells the application at what format would you like to receive the logs.
-Currently only two formats are being recognised:
+Currently only one formats is recognised:
 
 - Prometheus: `text/plain`
 
