@@ -32,13 +32,17 @@ func (metrics *MetricsCollection) Append(
 
 		if strings.HasPrefix(line, "# TYPE") {
 			metricTypeName := metricTypeRegex.FindStringSubmatch(line)[1]
+			metrics.mux.Lock()
 			metrics.MetricTypes[metricTypeName] = line
+			metrics.mux.Unlock()
 		} else {
 			metricName := metricRegex.FindStringSubmatch(line)[1]
+			metrics.mux.Lock()
 			metrics.MetricsByType[metricName] = append(
 				metrics.MetricsByType[metricName],
 				line,
 			)
+			metrics.mux.Unlock()
 		}
 	}
 

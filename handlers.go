@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -77,25 +78,27 @@ func (s *server) handleMetrics() http.HandlerFunc {
 			}()
 		}
 
-		appender.Add(1)
-		go func() {
-			defer appender.Done()
+		for i := 0; i < runtime.NumCPU(); i++ {
+			appender.Add(1)
+			go func() {
+				defer appender.Done()
 
-			for envelopes := range envelopeChan {
+				for envelopes := range envelopeChan {
 
-				metricFams := prometheus.Convert(envelopes)
-				err = metrics.Append(&metricFams)
+					metricFams := prometheus.Convert(envelopes)
+					err = metrics.Append(&metricFams)
 
-				if err != nil {
-					s.logger.Error(err)
-					s.error(
-						w,
-						http.StatusInternalServerError,
-						"Error converting log-cache metrics to prometheus format",
-					)
+					if err != nil {
+						s.logger.Error(err)
+						s.error(
+							w,
+							http.StatusInternalServerError,
+							"Error converting log-cache metrics to prometheus format",
+						)
+					}
 				}
-			}
-		}()
+			}()
+		}
 
 		for sourceID := range meta {
 			sourceIDs <- sourceID
