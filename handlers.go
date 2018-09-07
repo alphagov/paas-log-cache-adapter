@@ -48,7 +48,7 @@ func (s *server) handleMetrics() http.HandlerFunc {
 
 		var logGetters, appender sync.WaitGroup
 		sourceIDs := make(chan string)
-		envelopeChan := make(chan []*loggregator_v2.Envelope)
+		envelopeChan := make(chan []*loggregator_v2.Envelope, 10)
 		metrics := prometheus.CreateMetricsCollection()
 
 		for i := 0; i < 10; i++ {
