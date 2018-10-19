@@ -53,6 +53,21 @@ var _ = Describe("main package", func() {
 			Expect(w.Code).To(Equal(http.StatusUnauthorized))
 		})
 
+		It("should fail to serve the route due to incorrect auth creds", func() {
+			srv, err := newServer(log, acceptedFormats, api)
+
+			Expect(err).NotTo(HaveOccurred())
+			srv.routes()
+			r, err := http.NewRequest("GET", "/metrics", nil)
+			Expect(err).NotTo(HaveOccurred())
+			r.Header.Add("Authorization", "invalid-credentials")
+			r.Header.Add("Accept", "text/plain")
+			w := httptest.NewRecorder()
+			srv.router.ServeHTTP(w, r)
+
+			Expect(w.Code).To(Equal(http.StatusNotFound))
+		})
+
 		It("should fail to serve the route due unsupported format", func() {
 			srv, err := newServer(log, acceptedFormats, api)
 
