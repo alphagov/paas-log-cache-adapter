@@ -47,11 +47,20 @@ func (s *server) handleMetrics() http.HandlerFunc {
 		meta, err := client.Meta(ctx)
 		if err != nil {
 			s.logger.Error(err)
-			s.error(
-				w,
-				http.StatusInternalServerError,
-				"Cannot connect to log-cache",
-			)
+			switch err.Error() {
+			case "unexpected status code 404":
+				s.error(
+					w,
+					http.StatusNotFound,
+					"Cannot connect to log-cache - invalid credentials?",
+				)
+			default:
+				s.error(
+					w,
+					http.StatusInternalServerError,
+					"Cannot connect to log-cache",
+				)
+			}
 			return
 		}
 
