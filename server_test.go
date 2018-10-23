@@ -45,10 +45,10 @@ var _ = Describe("main package", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			srv.routes()
-			r, err := http.NewRequest("GET", "/", nil)
+			r, err := http.NewRequest("GET", "/metrics", nil)
 			Expect(err).NotTo(HaveOccurred())
 			w := httptest.NewRecorder()
-			srv.requireAuth(srv.chooseFormat(srv.handleMetrics()))(w, r)
+			srv.router.ServeHTTP(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusUnauthorized))
 		})
@@ -73,13 +73,13 @@ var _ = Describe("main package", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			srv.routes()
-			r, err := http.NewRequest("GET", "/", nil)
+			r, err := http.NewRequest("GET", "/metrics", nil)
 			Expect(err).NotTo(HaveOccurred())
 			r.Header.Add("Authorization", "__JWT_ACCESS_TOKEN__")
 			r.Header.Add("Accept", "text/html")
 
 			w := httptest.NewRecorder()
-			srv.requireAuth(srv.chooseFormat(srv.handleMetrics()))(w, r)
+			srv.router.ServeHTTP(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusNotAcceptable))
 		})
@@ -95,13 +95,13 @@ var _ = Describe("main package", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			srv.routes()
-			r, err := http.NewRequest("GET", "/", nil)
+			r, err := http.NewRequest("GET", "/metrics", nil)
 			Expect(err).NotTo(HaveOccurred())
 			r.Header.Add("Authorization", "__JWT_ACCESS_TOKEN__")
 			r.Header.Add("Accept", "text/plain")
 
 			w := httptest.NewRecorder()
-			srv.recordRequest(srv.requireAuth(srv.chooseFormat(srv.handleMetrics())))(w, r)
+			srv.router.ServeHTTP(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(w.Header().Get("Content-Type")).To(Equal("text/plain"))
@@ -172,13 +172,13 @@ var _ = Describe("main package", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			srv.routes()
-			r, err := http.NewRequest("GET", "/", nil)
+			r, err := http.NewRequest("GET", "/metrics", nil)
 			Expect(err).NotTo(HaveOccurred())
 			r.Header.Add("Authorization", "__JWT_ACCESS_TOKEN__")
 			r.Header.Add("Accept", "text/plain")
 
 			w := httptest.NewRecorder()
-			srv.recordRequest(srv.requireAuth(srv.chooseFormat(srv.handleMetrics())))(w, r)
+			srv.router.ServeHTTP(w, r)
 
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(w.Header().Get("Content-Type")).To(Equal("text/plain"))
