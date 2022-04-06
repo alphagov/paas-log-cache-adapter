@@ -1,0 +1,24 @@
+on: pull_request
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Install Go"
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.9"
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          # We must check out the repo in to a Go-like path
+          # and that path MUST be under
+          # /home/runner/work/REPO/REPO
+          path: "/home/runner/work/paas-log-cache-adapter/paas-log-cache-adapter/src/github.com/alphagov/paas-log-cache-adapter"
+
+      - name: Test
+        working-directory: "/home/runner/work/paas-log-cache-adapter/paas-log-cache-adapter/src/github.com/alphagov/paas-log-cache-adapter"
+        env:
+          GOPATH: "/home/runner/work/paas-log-cache-adapter/paas-log-cache-adapter/"
+        run: make test 
